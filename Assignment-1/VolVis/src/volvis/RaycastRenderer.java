@@ -294,6 +294,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         
         TFColor voxelColor = new TFColor();
         int max = volume.getMaximum();
+        double maxdistance = Math.max(volume.getDimX(),Math.max(volume.getDimY(), volume.getDimZ()));
         //create arraylist of colors for the composite function
         ArrayList<TFColor> colors = new ArrayList<TFColor>();
        //loop over image
@@ -302,7 +303,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                colors.clear();
 
                 
-                for(double k=-max;k < max ;k += this.blurredres){
+                for(double k=-maxdistance;k < maxdistance ;k += this.blurredres){
                     pixelCoord[0] = uVec[0] *(i - imageCenter) + vVec[0] * (j - imageCenter)+ volumeCenter[0] + k * viewVec[0];
                     pixelCoord[1] = uVec[1] *(i - imageCenter) + vVec[1] * (j - imageCenter)+ volumeCenter[1] + k * viewVec[1];
                     pixelCoord[2] = uVec[2] *(i - imageCenter) + vVec[2] * (j - imageCenter)+ volumeCenter[2] + k * viewVec[2];
@@ -319,6 +320,29 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     
                     colors.add(intermediateColor);                   
                 }   
+            double ru = 0;
+            double gu = 0;
+            double bu = 0;
+            double au = 0;
+            
+            for (int p=0; p < colors.size();p++){
+                double AU = colors.get(p).a;
+                
+                if (AU > 0){
+                    double RU = colors.get(p).r;
+                    double GU = colors.get(p).g;
+                    double BU = colors.get(p).b;
+                    ru += AU *RU * (1-au);
+                    gu += GU *RU * (1-au);
+                    bu += BU *RU * (1-au);
+                    au += AU * (1-au);
+                }
+            }
+            
+            voxelColor.a = au;
+            voxelColor.g = gu;
+            voxelColor.b = bu;
+            voxelColor.r = ru;
             // BufferedImage expects a pixel color packed as ARGB in an int
             int c_alpha = voxelColor.a <= 1.0 ? (int) Math.floor(voxelColor.a * 255) : 255;
             int c_red = voxelColor.r <= 1.0 ? (int) Math.floor(voxelColor.r * 255) : 255;
@@ -326,6 +350,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             int c_blue = voxelColor.b <= 1.0 ? (int) Math.floor(voxelColor.b * 255) : 255;
             int pixelColor = (c_alpha << 24) | (c_red << 16) | (c_green << 8) | c_blue;
             image.setRGB(i, j, pixelColor);
+            if(interactiveMode){
+                image.setRGB(i+1,j,pixelColor);
+                image.setRGB(i,j+1,pixelColor);
+                image.setRGB(i+1,j+1,pixelColor);
+            }
            }
        }
     }
