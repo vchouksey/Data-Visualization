@@ -361,7 +361,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
        }
     }
 
-      public VoxelGradient getGradient(double[] coord) {
+   public VoxelGradient getGradient(double[] coord) {
         if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
                 || coord[2] < 0 || coord[2] > volume.getDimZ()) {
             return new VoxelGradient();
@@ -373,11 +373,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         return gradients.getGradient(x,y,z);
     }
-private TFColor phongShading(TFColor original, double[] coord, double[] origin, double ambient, double diff, double spec, double alpha){
+private TFColor shadingPhong(TFColor original, double[] coord, double[] origin, double ambient, double diff, double spec, double alpha){
         VoxelGradient gradient = getGradient(coord);
-        TFColor newColor = new TFColor();
+        TFColor intermediatecolor = new TFColor();
         TFColor lightSource = new TFColor(1,1,1,1);
-
+        //vectors to calculate shading, N=normal, H=halfway, L=lightsource
         double[] L = new double[3]; 
         double[] H = new double[3];
         double[] N = new double[3];     
@@ -410,25 +410,22 @@ private TFColor phongShading(TFColor original, double[] coord, double[] origin, 
         N[1] = -((double) gradient.y / mag);
         N[2] = -((double) gradient.z / mag);
         if(N[0] != 0 || N[1] != 0 || N[2] != 0){
-            //System.out.println("[" +N[0] + "," + N[1] + "," + N[2] + "]" + " " + "[" +L[0] + "," + L[1] + "," + L[2] + "]");
+
         }
         double dotLN = VectorMath.dotproduct(L, N);
-        if(N[0] != 0 || N[1] != 0 || N[2] != 0){
-            //System.out.println(dotLN);
-        }
+
         double dotNH = VectorMath.dotproduct(N, H);
         double dotNHa = Math.pow(dotNH, alpha);
-        newColor.a = original.a;
-        newColor.r = lightSource.r * ambient + original.r * diff * Math.max(0.0, dotLN) + original.r * spec * Math.max(0.0, dotNHa);
-        newColor.g = lightSource.g * ambient + original.g * diff * Math.max(0.0, dotLN) + original.g * spec * Math.max(0.0, dotNHa);
-        newColor.b = lightSource.b * ambient + original.b * diff * Math.max(0.0, dotLN) + original.b * spec * Math.max(0.0, dotNHa);
-        if (original.r * diff * Math.max(0.0, dotLN) > 0 ||  spec * Math.max(0.0, dotNHa) > 0){
-            //System.out.println(lightSource.g * ambient + " " + original.g * diff * Math.max(0.0, dotLN) + " " + original.g * spec * Math.max(0.0, dotNHa));
-        }
-        newColor.r *= 1.5;
-        newColor.g *= 1.5;
-        newColor.b *= 1.5;
-        return newColor;
+        
+        intermediatecolor.a = original.a;
+        intermediatecolor.r = lightSource.r * ambient + original.r * diff * Math.max(0.0, dotLN) + original.r * spec * Math.max(0.0, dotNHa);
+        intermediatecolor.g = lightSource.g * ambient + original.g * diff * Math.max(0.0, dotLN) + original.g * spec * Math.max(0.0, dotNHa);
+        intermediatecolor.b = lightSource.b * ambient + original.b * diff * Math.max(0.0, dotLN) + original.b * spec * Math.max(0.0, dotNHa);
+
+        intermediatecolor.r *= 1.5;
+        intermediatecolor.g *= 1.5;
+        intermediatecolor.b *= 1.5;
+        return intermediatecolor;
      }
     
     void twoDTrans (double[] viewMatrix){        
@@ -456,10 +453,10 @@ private TFColor phongShading(TFColor original, double[] coord, double[] origin, 
         double[] pixelCoord = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
         
-        ArrayList<TFColor> compositeColors = new ArrayList<TFColor>();
+        ArrayList<TFColor> colors = new ArrayList<TFColor>();
         for (int j = 0; j < image.getHeight(); j+= this.blurredres) {
             for (int i = 0; i < image.getWidth(); i+= this.blurredres) {
-                compositeColors.clear();
+                colors.clear();
                 
                 
                 for (double k = -maxdistance; k < maxdistance; k+= this.blurredres){
@@ -472,60 +469,61 @@ private TFColor phongShading(TFColor original, double[] coord, double[] origin, 
                         + volumeCenter[2] + 1 * k * viewVec[2];
                     //System.out.println(pixelCoord[0] + " " + pixelCoord[1] + " " + pixelCoord[2]);
                     int value = this.trilinearInterpol(pixelCoord);
-                    TFColor newColor = new TFColor();
-                    newColor.a = baseColor.a;
-                    newColor.r = baseColor.r;
-                    newColor.g = baseColor.g;
-                    newColor.b = baseColor.b;
-                    VoxelGradient voxGra = getGradient(pixelCoord);
-                    int fv = tfEditor2D.triangleWidget.baseIntensity;
+                    TFColor intermediateColor = new TFColor();
+                    intermediateColor.a = baseColor.a;
+                    intermediateColor.r = baseColor.r;
+                    intermediateColor.g = baseColor.g;
+                    intermediateColor.b = baseColor.b;
+                    VoxelGradient gradientVoxel = getGradient(pixelCoord);
+                    int baseIntensity = tfEditor2D.triangleWidget.baseIntensity;
+                    double lb = tfEditor2D.triangleWidget.minGrad;
+                    double ub = tfEditor2D.triangleWidget.maxGrad;
                     double r = tfEditor2D.triangleWidget.radius;
-                    float magnitude = voxGra.mag;
+                    float magnitude = gradientVoxel.mag;
                     
                     
                     
-                    if (magnitude == 0.0f && value == fv){
-                        newColor.a = baseColor.a;
-                    } else if (magnitude > 0.0f &&  fv >= value - r * magnitude  && fv <= value + r * magnitude){
+                    if (magnitude == 0.0f && value == baseIntensity){
+                        intermediateColor.a = baseColor.a;
+                    } else if (magnitude > 0.0f &&  baseIntensity >= value - r * magnitude  && baseIntensity <= value + r * magnitude && magnitude >= lb && magnitude <= ub){
                         
-                        newColor.a = baseColor.a * (1 - (1/r) * Math.abs((fv - value)/magnitude));
+                        intermediateColor.a = baseColor.a * (1 - (1/r) * Math.abs((baseIntensity - value)/magnitude));
                     } else {
                         
-                        newColor.a = 0;
+                        intermediateColor.a = 0;
                     }
-                   // fix later with shading
+                   //shading selection
                     if(shading){
-                        System.out.println("we got here");
                         TFColor testColor = new TFColor();
-                        testColor.a = newColor.a;
-                        testColor.r = newColor.r;
-                        testColor.g = newColor.g;
-                        testColor.b = newColor.b;
-                        newColor = phongShading(testColor , pixelCoord, viewVec, 0.1, 0.7, 0.2, 10);
+                        testColor.a = intermediateColor.a;
+                        testColor.r = intermediateColor.r;
+                        testColor.g = intermediateColor.g;
+                        testColor.b = intermediateColor.b;
+                        intermediateColor = shadingPhong(testColor , pixelCoord, viewVec, 0.1, 0.7, 0.2, 10);
                     }
-                    compositeColors.add(newColor);
+                    colors.add(intermediateColor);
                 }
                 
-                double ru = 0;
-                double gu = 0;
-                double bu = 0;
-                double au = 0;
-                for (int q = 0; q < compositeColors.size(); q++){
-                     double aU = compositeColors.get(q).a;
-                    if (aU > 0) {
-                        double rU = compositeColors.get(q).r;
-                        double gU = compositeColors.get(q).g;
-                        double bU = compositeColors.get(q).b;
-                        ru += aU * rU * (1-au);
-                        gu += aU * gU * (1-au);
-                        bu += aU * bU * (1-au);
-                        au += aU * (1-au);
+                double intr = 0;
+                double intg = 0;
+                double intb = 0;
+                double inta = 0;
+                for (int q = 0; q < colors.size(); q++){
+                     double tempu = colors.get(q).a;
+                    if (tempu > 0) {
+                        double tempr = colors.get(q).r;
+                        double tempg = colors.get(q).g;
+                        double tempb = colors.get(q).b;
+                        intr += tempu * tempr * (1-inta);
+                        intg += tempu * tempg * (1-inta);
+                        intb += tempu * tempb * (1-inta);
+                        inta += tempu * (1-inta);
                     }
                 }
-                voxelColor.a = au;
-                voxelColor.r = ru;
-                voxelColor.g = gu;
-                voxelColor.b = bu;
+                voxelColor.a = inta;
+                voxelColor.r = intr;
+                voxelColor.g = intg;
+                voxelColor.b = intb;
                              
                 
                 // BufferedImage expects a pixel color packed as ARGB in an int
@@ -625,6 +623,10 @@ private TFColor phongShading(TFColor original, double[] coord, double[] origin, 
     
     public void setShading(boolean shading){
         this.shading = shading;
+    }
+    
+    public boolean getShading(){
+        return this.shading;
     }
     
     @Override
