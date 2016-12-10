@@ -48,6 +48,8 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
         labelMaxVal.setText(Integer.toString(maxIntensity));
 
         triangleWidget = new TriangleWidget((short) (maxIntensity / 2), 0.2);
+//        triangleWidget2 = new TriangleWidget((short) (maxIntensity / 4), 0.2);
+//        triangleWidget3 = new TriangleWidget((short) (3 * maxIntensity / 2), 0.2);
         setSelectedInfo();
     }
 
@@ -65,7 +67,9 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
 
     private void compute2Dhistogram() {
         maxIntensity = vol.getMaximum();
+        
         maxGradientMagnitude = gradvol.getMaxGradientMagnitude();
+        System.out.println("maxgrad" + maxGradientMagnitude);
 
         System.out.println("maxIntensity = " + maxIntensity);
         System.out.println("max gradient = " + maxGradientMagnitude);
@@ -289,14 +293,20 @@ public class TransferFunction2DEditor extends javax.swing.JPanel {
 
         public short baseIntensity;
         public double radius;
+        public double maxGrad;
+        public double minGrad;
         public TFColor color;
         
 
         public TriangleWidget(short base, double r) {
             this.baseIntensity = base;
             this.radius = r;
+            this.maxGrad = gradvol.getMaxGradientMagnitude();
+            this.minGrad = 20.0;
             this.color = new TFColor(0.0, 204.0/255.0, 153.0/255.0, 0.3);
         }
+        
+
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
