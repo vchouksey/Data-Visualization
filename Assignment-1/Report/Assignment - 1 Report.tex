@@ -1,0 +1,219 @@
+
+\documentclass[12pt, a4paper]{article} % set document type and sizes
+
+%---------------------------------------------------------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------------------------------------------------------
+
+% Useful Packages.
+
+\usepackage{amsmath} % prints mathematical formulas
+\usepackage{enumitem} % handles lists
+\usepackage{fancyhdr}
+
+ 
+\pagestyle{fancy}
+\usepackage{multirow} % handles merging cells in tables
+\usepackage{float} % adds [H] option to \begin{table}[H] to restrict floating.
+% to import tables from excel and csv use http://www.tablesgenerator.com/latex_tables
+
+\usepackage{cite} % Bibliography support 
+\usepackage{hyperref}
+\usepackage{graphicx}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+\usepackage{epstopdf}
+\usepackage{float}
+% For Greek characters support compile with XeLaTeX and include
+%\usepackage{xltxtra} % Greek support
+%\usepackage{xgreek} % Greek support
+%\setmainfont[Mapping=tex-text]{Garamond} % Font choice
+
+%---------------------------------------------------------------------------------------------------------------------
+% Title Section
+%---------------------------------------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % command for creating lines to place the title in a box
+
+\title{	
+\normalfont \normalsize 
+\textsc{Eindhoven University of Technology, Department of Mathematics and Computer Science} \\ [25pt] % University name and department
+\horrule{0.5pt} \\[0.4cm] % Top line
+\huge Visualization - Volume Rendering\\ % The report title
+\huge Assignment 1\\ % The report title
+\horrule{2pt} \\[0.5cm] % Bottom line
+}
+
+\author{
+T G Aerts \\ 
+0756341 \\ 
+T.g.aerts@student.tue.nl\\
+\\
+Vishal Chouksey \\ 
+1034346 \\ 
+v.k.chouksey@student.tue.nl
+} % Author's name
+
+\date{\normalsize\today} % Today's date
+%---------------------------------------------------------------------------------------------------------------------
+% Main Document
+%---------------------------------------------------------------------------------------------------------------------
+
+\begin{document}
+\maketitle % print title
+\cleardoublepage
+\tableofcontents
+\setcounter{page}{1}
+\cleardoublepage
+
+%---------------------------------------------------------------------------------------------------------------------
+% Introduction
+%---------------------------------------------------------------------------------------------------------------------
+\newpage
+\section{Introduction}
+\begin{itemize} 
+\item This Report on the course of Visualisation - Volume Rendering gives explanation and Implementation details on each functionalities that were asked and has been implemented though extension of existing functionality of the given skeleton programs.	
+
+\item Functionalities that we have implemented includes Trilinear Interpolation, Maximum Intensity Projection (MIP), Compositing Ray functions, Transfer 2D functions, Phong Shading, Triangle Widget.Furthermore, We applied method to Optimise Rendering Time of Image.
+
+\item We have made separate section for each functionalities each Sections has been categorised in Subsections to present more details. We have also implemented our functionalities through different Data sets.
+
+\item Additionally, We show the results by comparing the different functions and showing their weaknesses and strengths in conclusion section
+
+\end{itemize} 
+
+%---------------------------------------------------------------------------------------------------------------------
+% Sections - RayCasting
+%---------------------------------------------------------------------------------------------------------------------
+\newpage
+\section{RayCasting}
+
+\subsection{Introduction on RayCasting}
+RayCasting is an image based volume rendering technique which computes 2D images from 3D images, 
+every pixel of the view plane we cast a ray into a volume sampling voxels along the ray at set intervals. These voxels are then used to find the colour for that pixel from which the ray originated, Original Code has already functionality to display slices of 3D volumetric data sets into 2D planes.\\
+
+The We implemented RayCasting Method is to find the maximal dimension maxDim of the x,y and z dimensions of the volume, then we loop over values in the range with a sample distance of k.
+\left[-maxDim/2, maxDim/2\right]\\
+
+We have used same RayCasting i.e calculating maximum dimension in loop in each functionality.
+
+\subsection{Trilinear Interpolation}
+\includegraphics{Trilinear_Interpolation}\\
+From a proint X(x,y,z), we desire to find an estimated value from the vertices of a unit box surrounding our proint X(x,y,z). To elaborate this in detail, we have a box with 8 points Xijk where i, j, k ∈ {0, 1} values, in order to find value of vextex Vxyz, we need to interpolate to get estimation of the coordinates inside the cube.The value V of a point inside the cube with coordinates (x, y, z) is defined by:
+
+Vxyz = V000 \left(1- \alpha\right)\left(1- \beta\right)\left(1- \gamma\right)+\\    
+       V100\alpha\left(1-\beta\right)\left(1- \gamma\right)+\\
+       V010\left(1-\alpha\right)\beta\left(1-\gamma\right)+\\
+       V001\left(1-\alpha\right)\left(1-\beta\right)\gamma+\\
+       V101\alpha\left(1-\beta\right)\gamma+
+       V011\left(1-\alpha\right)\beta\gamma+\\
+       V110\alpha\beta\left(1- \gamma\right)+
+       V111\alpha\beta\gamma\\
+
+The variables $\alpha,\beta,\gamma$ are values from the range [0,1] and to compute them inside a unit box we set the difference Pxyz − P000, if the difference is 0 it means we are at point P000 and if it is 1 then we have the maximum point inside the box P111.We used floor and ceal function in order to compute all corner points in unit box.
+
+We have included to figure which shows with and without trinliear interpolation, figure 1 show The  data set visualized using the Composite function without Trilinear interpolation.figure 2 show The  data set visualized using the Composite function with Trilinear interpolation.
+
+Adding trilinear interpolation means adding more computations to the program, which therefore requires better performance from the computer.
+
+\subsection{Maximum Intensity Projection}
+Maximum Intensity Projection (MIP) consists of projecting the voxel with the highest attenuation value on every view throughout the volume onto a 2D image, We can also conclude MIP function is to find the colour values of voxels to display on the screen.
+
+The definition of MIP itself says in mathematical terms that every pixel we are getting the maximum intensity of its voxels
+We can derive MIP in below mathematical formula:
+
+${I(p) = \max_t st} 
+
+where I(p) is the intensity t of pixel p, t is the set of samples collected by RayCasting
+
+We have analyzed and measures advantages and disadvantages of MIP over other techniques.
+
+MIP has been shown to be more accurate than Volume rendering for evaluating, there are limitation of MIP is display is a two-dimensional representation that cannot accurately depict the actual 3D relationships, sometime it can be seen as picture is blurry.
+
+\subsection{Compositing}
+functionality of Composting function is based on opacity, colours propagation through volume rendering We can even see though this from composite function formula which is given below $\sum_{i=0}^{n-1} ci \prod_{j=i+1}^{n-1}\left ( 1 -Tj \right)$ where c is colour and t is the opacity, we have implemented back to front algorithm which determine opacity and colour values, so The colours we use for compositing come from a predefined transfer function which maps voxel intensity to a rgba colour
+$Ci =  Tici + (1-Ti)Ci-1$ where C is the colour after composting colour.\\
+
+\subsection{Optimisation of Rendering Time}
+Volume Rendering time was very high initially when we load data-sets, We have analyzed the given library and found that existing functionality is to calculate for every pixel during interactions, due to this the application becomes very slow during user interaction. To solve this problem we made implementation in a way, we decided to calculate the value for every cubic pixel of $4 \times 4 \times 4$ and display that value instead. after making this change, the resolution has been reduced by four times but the performance has successfully been increased by same ratio. this produces a new image as shown in figure number using only 4 sampling calculations, this thus cuts the rendering time in 4. This method of computing the resolution is used while the user is interacting with the model, while he is moving the image to look at it from different angles and while zooming in or out.\\
+We have attached figure 1 which shows rendered image with rendering time before making changes, we can also see figure 2 which shows rendered image with rendering time after making changes\\
+%---------------------------------------------------------------------------------------------------------------------
+% 2D Transfer Functions
+%---------------------------------------------------------------------------------------------------------------------
+\newpage
+\section{2D Transfer Functions}
+
+\subsection{Gradient-Based Opacity Weighting}
+Existing transfer function does not allow all ranges of intensity properly, so for this reason we decided to implement gradient magnitudes to find the opacity values for each voxel, the formula that we have used to compute gradient vectors is
+\begin{equation}
+\begin{split}
+\Delta f\left ( x \right ) = \Delta f\left (x_{i},y_{j},z_{k}\right )= \left (\frac{1}{2}\left [ f\left (x_{i+1},y_{i},z_{i}\right)-f\left (x_{i-1},y_{j},z_{k}\right) \right],\\ 
+\frac{1}{2}\left[f\left(x_{i},y_{i+1},z_{k}\right)-f\left (x_{i},y_{j-1},z_{k}\right) \right],\\
+\frac{1}{2}\left[f\left(x_{i},y_{j},z_{k+1}\right)-f\left (x_{i},y_{j},z_{k-1}\right) \right])
+\end{split}
+\end{equation}
+\\
+Given Volvis library has existing functionality to compute 2D transfer function, but we dont have functionality for computing gradient for every voxels, We have implemented this functionality.\\
+
+We have used above formula to compute all gradients which are then displayed on the histogram.
+
+\subsection{Triangle Widget}
+widget controls to set optical properties to directly render the volume
+The gradient magnitude property allows us to isolate sections by setting a lower bound and upper bound over the range of the gradient magnitude.
+
+To implement this range, first we give the user the functionality of setting the minimum and maximum value accepted by two text fields. After the values have been set, the user must click on the button ”setGradMag”,Inside the triangle widget, we defined two new variables that represent our lower and upper bound. Now, each gradient magnitude, is the scalar quantity which describes the local rate of change in the scalar field, allowing us to picture different regions and test.
+
+\subsection{Illumination model}
+In order to implement illumination model we used phong shading model we explicitly refer course notes of visualization - volume rendering, which define phong shading model as \begin{equation}I = I_{a}k_{ambient} + I_{d}k_{diff}\left ( L.N \right )+I_{i}k_{spec}\left (V.R \right )^{\alpha}\end{equation} where I is the final value of colour, $I_{a}$ is the light source we assume and implement it as white colour, $I_{d}$ is the surface colour from transfer function.ambient, diffuse, specular are material properties are captured by reflectivity coefficient vectors $K = \left ( k_{r},k_{g},k_{b} \right ). \alpha$ is the shininess constant for specular lighting, L is the
+direction vector pointing from a voxel to the light source, N is the normal vector on a voxel, V is the direct vector of a voxel to the camera and H is the halfway. We have implement this method by using light source with values RGB as (1,1,1)\\
+The results of shading can be seen in figure
+%---------------------------------------------------------------------------------------------------------------------
+% Data Exploration
+%---------------------------------------------------------------------------------------------------------------------
+\newpage
+\section{Data Exploration}
+
+\subsection{Tooth}
+\subsection{PiggyBank}
+\subsection{Fish}
+\subsection{Orange}
+\subsection{Tomato}
+
+%---------------------------------------------------------------------------------------------------------------------
+% Conclusions
+%---------------------------------------------------------------------------------------------------------------------
+\newpage
+\section{Conclusions}
+
+\begin{itemize}
+\item 
+\end{itemize}
+\cleardoublepage
+%---------------------------------------------------------------------------------------------------------------------
+% Bibliography
+%---------------------------------------------------------------------------------------------------------------------
+
+\section{Bibliography}
+\begin{thebibliography}{9}
+\bibitem{latexcompanion} 
+John Pawasauskas CS563 - Advanced Topics in Computer Graphics. \href{John Pawasauskas. Volume Visualization With Ray Casting, http://web.cs.wpi.edu/ matt/courses/cs563/talks/powwie/p1/ray-cast.htm}{Volume Visualization With Ray Casting}.
+ 
+\bibitem{latexcompanion} 
+Gerd Marmitt, Heiko Friedrich, and Philipp Slusallek \href{https://graphics.cg.uni-saarland.de/fileadmin/cguds/papers/2006/STAR/eg2006star_vrt.pdf}{Interactive Volume Rendering with Ray Tracing}
+
+\bibitem{latexcompanion} 
+Defination and Classification of Volume ray casting\href{https://en.wikipedia.org/wiki/Volume_ray_casting}{Volume ray casting}
+
+\bibitem{latexcompanion} 
+M. Levoy. Display of surfaces from volume data. IEEE Computer Graphics and Applications, 8(3):29?37, 1988.
+
+\bibitem{latexcompanion} 
+Joe Kniss, G. L. Kindlmann, and C. D. Hansen. Multidimensional transfer functions for interactive volume rendering. IEEE Trans. Visualization and Computer Graphics, 8(3):270?285, 2002.
+
+\end{thebibliography}
+
+\end{document}
